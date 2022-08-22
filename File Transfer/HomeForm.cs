@@ -41,11 +41,12 @@ namespace File_Transfer
         string targetIP;
         string targetName;
         NotificationForm f2;
+        private bool isChangeIP = false; 
 
         private void mainForm_Load(object sender, EventArgs e)
         {
             notificationLabel.ForeColor = Color.Red;
-            notificationLabel.Text = "Application is offline";            
+            notificationLabel.Text = "Application is offline";
             savePathLabel.Text = Directory.GetCurrentDirectory();
         }
         //for starting this program as a server
@@ -72,7 +73,7 @@ namespace File_Transfer
             {
                 while (true)
                 {
-                    if(fileReceived == 1)
+                    if (fileReceived == 1)
                     {
                         if (MessageBox.Show("Save File?", "File received", MessageBoxButtons.YesNo, MessageBoxIcon.Question) == DialogResult.No)
                         {
@@ -84,13 +85,13 @@ namespace File_Transfer
                             fileReceived = 0;
                         }
                     }
-                   
+
                     client = listener.AcceptTcpClient();
                     Invoke((MethodInvoker)delegate
                     {
                         notificationPanel.Visible = true;
-                        notificationTempLabel.Text = "File coming..."+"\n"+fileName+"\n"+"From: " + senderIP + " " + senderMachineName;
-                        fileNotificationLabel.Text = "File Coming from "+senderIP+" "+senderMachineName;
+                        notificationTempLabel.Text = "File coming..." + "\n" + fileName + "\n" + "From: " + senderIP + " " + senderMachineName;
+                        fileNotificationLabel.Text = "File Coming from " + senderIP + " " + senderMachineName;
                     });
                     isConnected = true;
                     NetworkStream stream = client.GetStream();
@@ -152,6 +153,11 @@ namespace File_Transfer
 
         private void startButton_Click(object sender, EventArgs e)
         {
+            startSearchPC();
+        }
+
+        private void startSearchPC()
+        {
             ipBox.Text = "";
             onlinePCList.Items.Clear();
             notificationLabel.ForeColor = Color.Green;
@@ -168,21 +174,29 @@ namespace File_Transfer
                 MessageBox.Show(e1.Message);
             }
         }
+
         void searchPC()
         {
             bool isNetworkUp = NetworkInterface.GetIsNetworkAvailable();
             if (isNetworkUp)
             {
-                ipComboBox.Items.Clear();
-                var host = Dns.GetHostEntry(Dns.GetHostName());
-                foreach (var ip in host.AddressList)
+                if (isChangeIP) {
+                    this.IP = ipComboBox.Text;
+                }
+                else
                 {
-                    if (ip.AddressFamily == AddressFamily.InterNetwork)
+                    ipComboBox.Items.Clear();
+                    var host = Dns.GetHostEntry(Dns.GetHostName());
+                    foreach (var ip in host.AddressList)
                     {
-                        ipComboBox.Items.Add(ip.ToString().Trim());
-                        this.IP = ip.ToString(); 
+                        if (ip.AddressFamily == AddressFamily.InterNetwork)
+                        {
+                            ipComboBox.Items.Add(ip.ToString().Trim());
+                            this.IP = ip.ToString();
+                        }
                     }
                 }
+
                 Invoke((MethodInvoker)delegate
                 {
                     infoLabel.Text = "This Computer: " + this.IP;
@@ -343,7 +357,7 @@ namespace File_Transfer
         }
         void showNotification()
         {
-            f2 = new NotificationForm(targetName,targetIP);
+            f2 = new NotificationForm(targetName, targetIP);
             f2.ShowDialog();
         }
         private void mainForm_FormClosing(object sender, FormClosingEventArgs e)
@@ -359,7 +373,7 @@ namespace File_Transfer
                     serverThread.Join();
                 }
             }
-            Application.Exit();            
+            Application.Exit();
         }
 
         private void stopButton_Click(object sender, EventArgs e)
@@ -423,7 +437,7 @@ namespace File_Transfer
                     serverThread.Abort();
                     serverThread.Join();
                 }
-               
+
             }
             Application.Exit();
         }
@@ -446,22 +460,11 @@ namespace File_Transfer
         private void ipComboBox_SelectedIndexChanged(object sender, EventArgs e)
         {
             stopServer();
-
-            this.IP = ipComboBox.Text;
+            Thread.Sleep(1000);
             if (!String.IsNullOrEmpty(IP))
             {
-                if (!serverRunning)
-                    startServer();
-
-                Invoke((MethodInvoker)delegate
-                {
-                    infoLabel.Text = "This Computer: " + this.IP;
-                });
-                Invoke((MethodInvoker)delegate
-                {
-                    notificationLabel.ForeColor = Color.Green;
-                    notificationLabel.Text = "Application is Online";
-                });
+                isChangeIP = true;
+                startSearchPC();
             }
         }
     }
